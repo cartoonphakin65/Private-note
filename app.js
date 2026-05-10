@@ -1,7 +1,6 @@
-/* app.js — Private Note LIFF App */
 const C = {
   LIFF_ID: "2010026548-URmUkcwk",
-  API_URL: "https://script.google.com/macros/s/AKfycbwWEqOm8U5gn3z3pTP6KtNFew11lNj9_d0EozTIAITnsuyUHxIlQuYL5OD0PBlk47SA/exec",
+  API_URL: API_URL,
 };
 
 const S = {
