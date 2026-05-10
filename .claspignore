@@ -1,6 +1,0 @@
-# Ignore frontend files — push เฉพาะ GAS backend เท่านั้น
-index.html
-style.css
-app.js
-README.md
-.clasp.json
