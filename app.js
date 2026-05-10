@@ -249,11 +249,35 @@ function renderView() {
     </div>`;
 }
 
+function renderMarkdown(text) {
+  if (!text) return "";
+  let html = esc(text);
+  // Bold **text**
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  // Italic *text*
+  html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+  // Highlight ==text==
+  html = html.replace(/==(.*?)==/g, '<mark style="background:#fef08a; padding:0 4px; border-radius:2px;">$1</mark>');
+  // Code `text`
+  html = html.replace(/`(.*?)`/g, '<code class="markdown-code">$1</code>');
+  // Bullets (line starting with "- ")
+  html = html.split('\n').map(line => {
+    if (line.trim().startsWith('- ')) {
+      return `<li class="markdown-li">${line.replace(/^- /, '').trim()}</li>`;
+    }
+    return line;
+  }).join('\n');
+  
+  // Wrap adjacent <li> in <ul>
+  html = html.replace(/(<li.*<\/li>\n?)+/g, '<ul class="markdown-ul">$&</ul>');
+  return html;
+}
+
 function renderBlock(b) {
   if (b.type === "text") return `
     <div class="block-card">
       ${b.label ? `<div class="block-label">${esc(b.label)}</div>` : ""}
-      <div class="block-value">${esc(b.value || "")}</div>
+      <div class="block-value markdown-body">${renderMarkdown(b.value)}</div>
     </div>`;
 
   if (b.type === "table") {
