@@ -10,6 +10,7 @@ const S = {
   pageData: null,
   editData: null,
   token: null,
+  searchQuery: "",
 };
 
 const app = document.getElementById("app");
@@ -104,8 +105,11 @@ function renderList() {
   const chips = cats.map(c => `
     <button class="cat-chip ${c.category === S.activeCategory ? "active" : ""}" onclick="setCategory('${esc(c.category)}')">${esc(c.category)}</button>`).join("");
 
-  const cards = titles.length
-    ? titles.map(t => `
+  const searchTerm = S.searchQuery.toLowerCase().trim();
+  const filteredTitles = titles.filter(t => t.toLowerCase().includes(searchTerm));
+
+  const cards = filteredTitles.length
+    ? filteredTitles.map(t => `
       <div class="page-card" onclick="loadPage('${esc(S.activeCategory)}','${esc(t)}')">
         <div class="page-card-icon">🔐</div>
         <div class="page-card-title">${esc(t)}</div>
@@ -113,8 +117,8 @@ function renderList() {
       </div>`).join("")
     : `<div class="empty-state" style="grid-column:1/-1">
         <div class="empty-state-icon">📭</div>
-        <div class="empty-state-title">ยังไม่มีหน้าในหมวดนี้</div>
-        <div class="empty-state-sub">กด + เพื่อเพิ่มหน้าใหม่</div>
+        <div class="empty-state-title">ไม่พบโน้ตที่ค้นหา</div>
+        <div class="empty-state-sub">ลองเปลี่ยนคำค้นหา หรือหมวดหมู่</div>
        </div>`;
 
   app.innerHTML = `
@@ -146,6 +150,12 @@ function renderList() {
           <div class="mobile-header-title">Private Note</div>
           <button class="btn btn-primary btn-sm" onclick="go('edit',{editData:{category:S.activeCategory||'',pageTitle:'',blocks:[],isNew:true}})">+ เพิ่ม</button>
         </div>
+        <div class="search-section">
+          <div class="search-box">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input type="text" placeholder="ค้นหาโน้ต..." value="${esc(S.searchQuery)}" oninput="setSearch(this.value)" class="search-input">
+          </div>
+        </div>
         <div class="cat-chips">${chips}</div>
         <div class="content-area">
           <div class="section-heading">${esc(S.activeCategory || "เลือกหมวดหมู่")}</div>
@@ -158,7 +168,19 @@ function renderList() {
 
 function setCategory(cat) {
   S.activeCategory = cat;
+  S.searchQuery = "";
   renderList();
+}
+
+function setSearch(val) {
+  S.searchQuery = val;
+  renderList();
+  // รักษาสถานะ focus ของช่องค้นหา
+  const input = document.querySelector('.search-input');
+  if (input) {
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }
 }
 
 /* ── VIEW PAGE ── */
@@ -237,11 +259,21 @@ function renderBlock(b) {
     const rows = b.data || [];
     if (!rows.length) return `<div class="block-card"><div class="block-value text-muted">ตารางว่าง</div></div>`;
     const cols = Object.keys(rows[0]);
-    const thead = cols.map(c => `<th>${esc(c)}</th>`).join("");
-    const tbody = rows.map(r =>
-      `<tr>${cols.map(c => `<td><div class="table-cell-flex">${esc(r[c] || "")}<button class="copy-btn" onclick="copyText('${esc(r[c] || "")}')">คัดลอก</button></div></td>`).join("")}</tr>`
-    ).join("");
-    return `<div class="block-card"><div class="block-table-wrap"><table class="block-table"><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table></div></div>`;
+    const thead = cols.map(c => `<th>${esc(c)}</th>`).join("") + `<th>จัดการ</th>`;
+    const tbody = rows.map(r => {
+      const rowText = cols.map(c => r[c] || "").join(" | ");
+      return `<tr>${cols.map(c => `<td><div class="table-cell-flex">${esc(r[c] || "")}<button class="copy-btn" onclick="copyText('${esc(r[c] || "")}')">คัดลอก</button></div></td>`).join("")}
+      <td style="width:80px; text-align:center;"><button class="btn btn-sm btn-ghost" style="font-size:10px; padding:3px 6px;" onclick="copyText('${esc(rowText)}')">Copy Row</button></td></tr>`;
+    }).join("");
+    
+    const tableText = rows.map(r => cols.map(c => r[c] || "").join(" | ")).join("\\n");
+    return `<div class="block-card">
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:12px 16px 0;">
+        <span class="block-label" style="padding:0">Table Data</span>
+        <button class="btn btn-sm btn-ghost" onclick="copyText('${esc(tableText)}')">📋 Copy ทั้งตาราง</button>
+      </div>
+      <div class="block-table-wrap mt-2"><table class="block-table"><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table></div>
+    </div>`;
   }
 
   if (b.type === "image") return `
@@ -459,21 +491,43 @@ function initTableCols(bi, val) {
   renderEdit();
 }
 
-/* ── Image Upload ── */
+/* ── Image Upload & Compress ── */
 async function uploadImage(bi, input) {
   const file = input.files[0];
   if (!file) return;
+  toast("กำลังเตรียมไฟล์รูปภาพ...", "info");
   const reader = new FileReader();
   reader.onload = async (e) => {
-    try {
-      toast("กำลังอัปโหลด...", "info");
-      const res = await api("uploadImage", { base64Data: e.target.result, mimeType: file.type, fileName: file.name });
-      S.editData.blocks[bi].url = res.url;
-      toast("อัปโหลดสำเร็จ", "success");
-      renderEdit();
-    } catch (err) {
-      toast(err.message, "error");
-    }
+    const img = new Image();
+    img.onload = async () => {
+      // บีบอัดให้กว้าง/สูง ไม่เกิน 1200px
+      const MAX_SIZE = 1200;
+      let width = img.width;
+      let height = img.height;
+      if (width > height && width > MAX_SIZE) {
+        height *= MAX_SIZE / width; width = MAX_SIZE;
+      } else if (height > MAX_SIZE) {
+        width *= MAX_SIZE / height; height = MAX_SIZE;
+      }
+      
+      const canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      const compressedData = canvas.toDataURL("image/jpeg", 0.8);
+      
+      try {
+        toast("กำลังอัปโหลด (บีบอัดแล้ว)...", "info");
+        const res = await api("uploadImage", { base64Data: compressedData, mimeType: "image/jpeg", fileName: file.name.replace(/\.[^/.]+$/, "") + ".jpg" });
+        S.editData.blocks[bi].url = res.url;
+        toast("อัปโหลดสำเร็จ", "success");
+        renderEdit();
+      } catch (err) {
+        toast(err.message, "error");
+      }
+    };
+    img.src = e.target.result;
   };
   reader.readAsDataURL(file);
 }
