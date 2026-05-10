@@ -332,13 +332,18 @@ img { max-width: 100%; display: block; }
 }
 .copy-btn {
   position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
-  opacity: 0; padding: 3px 7px;
+  opacity: 0.2; padding: 3px 7px;
   background: var(--primary-50); color: var(--primary);
   border-radius: var(--r-sm); font-size: 10px; font-weight: 600;
   transition: opacity 0.15s;
   font-family: var(--f-ui);
 }
-.block-table tr:hover .copy-btn { opacity: 1; }
+.block-table tr:hover .copy-btn, .block-table td.copy-cell:active .copy-btn { 
+  opacity: 1; 
+}
+@media (max-width: 768px) {
+  .copy-btn { opacity: 0.8; }
+}
 
 /* Image Block */
 .block-image { width: 100%; max-height: 360px; object-fit: contain; }
