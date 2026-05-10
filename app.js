@@ -67,6 +67,7 @@ function confirm(title, desc) {
 
 /* ── Navigate ── */
 function go(view, params = {}) {
+  console.log("Navigating to:", view, params);
   Object.assign(S, params);
   S.view = view;
   render();
@@ -79,12 +80,14 @@ function render() {
 }
 
 function renderLoading() {
-  document.getElementById("loading-screen").style.display = "";
+  const ls = document.getElementById("loading-screen");
+  if (ls) ls.style.display = "";
 }
 
 /* ── LIST VIEW ── */
 function renderList() {
-  document.getElementById("loading-screen").style.display = "none";
+  const ls = document.getElementById("loading-screen");
+  if (ls) ls.style.display = "none";
   const cats = S.categories;
   if (!S.activeCategory && cats.length) S.activeCategory = cats[0].category;
   const active = cats.find(c => c.category === S.activeCategory);
@@ -150,7 +153,7 @@ function renderList() {
         </div>
       </div>
     </div>
-    <button class="fab" onclick="go('edit',{editData:{category:S.activeCategory||'',pageTitle:'',blocks:[],isNew:true}})">＋</button>`;
+    <button class="fab" id="fab-add" onclick="go('edit',{editData:{category:S.activeCategory||'',pageTitle:'',blocks:[],isNew:true}})">＋</button>`;
 }
 
 function setCategory(cat) {
@@ -272,7 +275,8 @@ function startEdit() {
 
 /* ── EDIT VIEW ── */
 function renderEdit() {
-  document.getElementById("loading-screen").style.display = "none";
+  const ls = document.getElementById("loading-screen");
+  if (ls) ls.style.display = "none";
   const d = S.editData || { category: "", pageTitle: "", blocks: [], isNew: true };
   const cats = S.categories.map(c => `<option value="${esc(c.category)}">`).join("");
   const blocksHtml = (d.blocks || []).map((b, i) => renderEditBlock(b, i)).join("");
