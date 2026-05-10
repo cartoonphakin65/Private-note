@@ -239,7 +239,7 @@ function renderBlock(b) {
     const cols = Object.keys(rows[0]);
     const thead = cols.map(c => `<th>${esc(c)}</th>`).join("");
     const tbody = rows.map(r =>
-      `<tr>${cols.map(c => `<td class="copy-cell" onclick="copyText('${esc(r[c] || "")}')">${esc(r[c] || "")}<span class="copy-btn">คัดลอก</span></td>`).join("")}</tr>`
+      `<tr>${cols.map(c => `<td><div class="table-cell-flex">${esc(r[c] || "")}<button class="copy-btn" onclick="copyText('${esc(r[c] || "")}')">คัดลอก</button></div></td>`).join("")}</tr>`
     ).join("");
     return `<div class="block-card"><div class="block-table-wrap"><table class="block-table"><thead><tr>${thead}</tr></thead><tbody>${tbody}</tbody></table></div></div>`;
   }
