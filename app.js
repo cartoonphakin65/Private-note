@@ -105,8 +105,8 @@ function renderList() {
   const chips = cats.map(c => `
     <button class="cat-chip ${c.category === S.activeCategory ? "active" : ""}" onclick="setCategory('${esc(c.category)}')">${esc(c.category)}</button>`).join("");
 
-  const searchTerm = S.searchQuery.toLowerCase().trim();
-  const filteredTitles = titles.filter(t => t.toLowerCase().includes(searchTerm));
+  const searchTerm = (S.searchQuery || "").toLowerCase().trim();
+  const filteredTitles = titles.filter(t => String(t).toLowerCase().includes(searchTerm));
 
   const cards = filteredTitles.length
     ? filteredTitles.map(t => `
