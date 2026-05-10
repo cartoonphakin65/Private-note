@@ -2,10 +2,10 @@
    Design System — Private Note (Light Mode)
    ============================================================ */
 :root {
-  --primary:        #6366f1;
-  --primary-50:     #eef2ff;
-  --primary-100:    #e0e7ff;
-  --primary-600:    #4f46e5;
+  --primary:        #7719aa;
+  --primary-50:     #f4ebf9;
+  --primary-100:    #e5d0f1;
+  --primary-600:    #5c1186;
   --violet:         #8b5cf6;
   --emerald:        #10b981;
   --emerald-50:     #ecfdf5;
@@ -236,39 +236,30 @@ img { max-width: 100%; display: block; }
 
 .content-area { flex: 1; padding: 24px; max-width: 960px; width: 100%; }
 
-/* ── Page Cards ── */
-.page-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 14px;
-  margin-top: 4px;
+/* ── Page List (OneNote Style) ── */
+.page-list {
+  display: flex; flex-direction: column;
 }
-.page-card {
+.page-list-item {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
-  padding: 18px;
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
   cursor: pointer;
-  transition: all 0.18s var(--ease);
-  display: flex; flex-direction: column; gap: 10px;
-  box-shadow: var(--shadow-xs);
+  transition: background 0.15s;
+  display: flex; flex-direction: column; gap: 4px;
 }
-.page-card:hover {
-  border-color: var(--primary-100);
-  box-shadow: var(--shadow-md);
-  transform: translateY(-2px);
+.page-list-item:hover {
+  background: var(--gray-50);
 }
-.page-card-icon {
-  width: 40px; height: 40px;
-  border-radius: var(--r-md);
-  background: var(--primary-50);
-  display: flex; align-items: center; justify-content: center;
-  font-size: 20px;
+.page-list-item:active {
+  background: var(--gray-100);
 }
-.page-card-title { font-size: 14px; font-weight: 600; color: var(--text); }
-.page-card-meta {
-  font-size: 11.5px; color: var(--text-3);
-  display: flex; align-items: center; gap: 6px;
+.page-list-title {
+  font-size: 15px; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.page-list-meta {
+  font-size: 12px; color: var(--text-3);
 }
 
 .empty-state {
@@ -624,6 +615,12 @@ img { max-width: 100%; display: block; }
   position: sticky; top: 0; z-index: 100;
   gap: 10px;
 }
+.mobile-header.onenote-header {
+  background: var(--primary);
+  color: white;
+  border-bottom: none;
+  box-shadow: var(--shadow-md);
+}
 .mobile-header-title { font-size: 15px; font-weight: 700; flex: 1; }
 
 /* ── Search Bar (Mobile & Desktop) ── */
@@ -657,8 +654,8 @@ img { max-width: 100%; display: block; }
 .cat-chips {
   display: flex; gap: 8px;
   overflow-x: auto; padding: 12px 24px;
-
   scrollbar-width: none;
+  background: var(--surface);
 }
 .cat-chips::-webkit-scrollbar { display: none; }
 .cat-chip {
@@ -702,8 +699,7 @@ img { max-width: 100%; display: block; }
   .mobile-header{ display: flex; }
   .main-header  { display: none; }
   .fab          { display: flex; }
-  .content-area { padding: 16px; }
-  .page-grid    { grid-template-columns: 1fr; }
+  .content-area { padding: 0; }
   .search-section { padding: 16px 16px 0; }
   .cat-chips    { display: flex; padding: 12px 16px; }
   .modal-box    { padding: 20px; }

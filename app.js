@@ -110,12 +110,11 @@ function renderList() {
 
   const cards = filteredTitles.length
     ? filteredTitles.map(t => `
-      <div class="page-card" onclick="loadPage('${esc(S.activeCategory)}','${esc(t)}')">
-        <div class="page-card-icon">🔐</div>
-        <div class="page-card-title">${esc(t)}</div>
-        <div class="page-card-meta"><span>🏷️ ${esc(S.activeCategory)}</span></div>
+      <div class="page-list-item" onclick="loadPage('${esc(S.activeCategory)}','${esc(t)}')">
+        <div class="page-list-title">${esc(t)}</div>
+        <div class="page-list-meta">หมวดหมู่: ${esc(S.activeCategory)}</div>
       </div>`).join("")
-    : `<div class="empty-state" style="grid-column:1/-1">
+    : `<div class="empty-state">
         <div class="empty-state-icon">📭</div>
         <div class="empty-state-title">ไม่พบโน้ตที่ค้นหา</div>
         <div class="empty-state-sub">ลองเปลี่ยนคำค้นหา หรือหมวดหมู่</div>
@@ -146,9 +145,9 @@ function renderList() {
         </div>
       </nav>
       <div class="main-area">
-        <div class="mobile-header">
+        <div class="mobile-header onenote-header">
           <div class="mobile-header-title">Private Note</div>
-          <button class="btn btn-primary btn-sm" onclick="go('edit',{editData:{category:S.activeCategory||'',pageTitle:'',blocks:[],isNew:true}})">+ เพิ่ม</button>
+          <button class="btn btn-primary btn-sm" style="background:rgba(255,255,255,0.2); color:white; border:none;" onclick="go('edit',{editData:{category:S.activeCategory||'',pageTitle:'',blocks:[],isNew:true}})">+ เพิ่ม</button>
         </div>
         <div class="search-section">
           <div class="search-box">
@@ -157,9 +156,11 @@ function renderList() {
           </div>
         </div>
         <div class="cat-chips">${chips}</div>
-        <div class="content-area">
-          <div class="section-heading">${esc(S.activeCategory || "เลือกหมวดหมู่")}</div>
-          <div class="page-grid">${cards}</div>
+        <div class="content-area" style="padding:0; max-width:100%;">
+          <div class="section-heading" style="padding:16px 24px 8px; margin:0; background:var(--surface); border-bottom:1px solid var(--border); font-size:16px; font-weight:700; color:var(--text); text-transform:none;">
+            ${esc(S.activeCategory || "หน้าทั้งหมด")}
+          </div>
+          <div class="page-list">${cards}</div>
         </div>
       </div>
     </div>
@@ -259,11 +260,9 @@ function renderBlock(b) {
     const rows = b.data || [];
     if (!rows.length) return `<div class="block-card"><div class="block-value text-muted">ตารางว่าง</div></div>`;
     const cols = Object.keys(rows[0]);
-    const thead = cols.map(c => `<th>${esc(c)}</th>`).join("") + `<th>จัดการ</th>`;
+    const thead = cols.map(c => `<th>${esc(c)}</th>`).join("");
     const tbody = rows.map(r => {
-      const rowText = cols.map(c => r[c] || "").join(" | ");
-      return `<tr>${cols.map(c => `<td><div class="table-cell-flex">${esc(r[c] || "")}<button class="copy-btn" onclick="copyText('${esc(r[c] || "")}')">คัดลอก</button></div></td>`).join("")}
-      <td style="width:80px; text-align:center;"><button class="btn btn-sm btn-ghost" style="font-size:10px; padding:3px 6px;" onclick="copyText('${esc(rowText)}')">Copy Row</button></td></tr>`;
+      return `<tr>${cols.map(c => `<td><div class="table-cell-flex">${esc(r[c] || "")}<button class="copy-btn" onclick="copyText('${esc(r[c] || "")}')">คัดลอก</button></div></td>`).join("")}</tr>`;
     }).join("");
     
     const tableText = rows.map(r => cols.map(c => r[c] || "").join(" | ")).join("\\n");
