@@ -13,6 +13,7 @@ const S = {
   searchQuery: "",
   lockedCategories: [],
   categoryPasswords: {},
+  sidebarOpen: false,
 };
 
 const app = document.getElementById("app");
@@ -93,19 +94,32 @@ function renderList() {
   if (ls) ls.style.display = "none";
   const cats = S.categories;
   if (!S.activeCategory && cats.length) S.activeCategory = cats[0].category;
+  
+  const isCurrentLocked = S.lockedCategories.includes(S.activeCategory);
+  const isCurrentUnlocked = !!S.categoryPasswords[S.activeCategory];
+  
   const active = cats.find(c => c.category === S.activeCategory);
-  const titles = active ? active.titles : [];
+  // ถ้าล็อคอยู่และยังไม่ได้ใส่รหัส จะไม่แสดงรายชื่อ titles (เหมือน OneNote)
+  const titles = (isCurrentLocked && !isCurrentUnlocked) ? [] : (active ? active.titles : []);
 
-  const catIcons = ["📁","📂","🗂️","📋","📌"];
-  const sidebarCats = cats.map((c, i) => `
+  const catIcons = ["📁","📂","🗂️","🗃️","📋"];
+  const sidebarCats = cats.map((c, i) => {
+    const isLocked = S.lockedCategories.includes(c.category);
+    return `
     <button class="sidebar-cat-btn ${c.category === S.activeCategory ? "active" : ""}" onclick="setCategory('${esc(c.category)}')">
-      <span class="sidebar-cat-icon">${catIcons[i % catIcons.length]}</span>
+      <span class="sidebar-cat-icon">${isLocked ? '🔒' : catIcons[i % catIcons.length]}</span>
       <span>${esc(c.category)}</span>
       <span class="sidebar-cat-count">${c.titles.length}</span>
-    </button>`).join("");
+    </button>`;
+  }).join("");
 
-  const chips = cats.map(c => `
-    <button class="cat-chip ${c.category === S.activeCategory ? "active" : ""}" onclick="setCategory('${esc(c.category)}')">${esc(c.category)}</button>`).join("");
+  const chips = cats.map(c => {
+    const isLocked = S.lockedCategories.includes(c.category);
+    return `
+    <button class="cat-chip ${c.category === S.activeCategory ? "active" : ""}" onclick="setCategory('${esc(c.category)}')">
+      ${isLocked ? '🔒 ' : ''}${esc(c.category)}
+    </button>`;
+  }).join("");
 
   const searchTerm = (S.searchQuery || "").toLowerCase().trim();
   const filteredTitles = titles.filter(t => String(t).toLowerCase().includes(searchTerm));
@@ -116,14 +130,21 @@ function renderList() {
         <div class="page-list-title">${esc(t)}</div>
         <div class="page-list-meta">หมวดหมู่: ${esc(S.activeCategory)}</div>
       </div>`).join("")
-    : `<div class="empty-state">
-        <div class="empty-state-icon">📭</div>
-        <div class="empty-state-title">ไม่พบโน้ตที่ค้นหา</div>
-        <div class="empty-state-sub">ลองเปลี่ยนคำค้นหา หรือหมวดหมู่</div>
-       </div>`;
+    : (isCurrentLocked && !isCurrentUnlocked 
+        ? `<div class="empty-state" onclick="unlockCategory('${esc(S.activeCategory)}')">
+            <div class="empty-state-icon">🔒</div>
+            <div class="empty-state-title">หมวดหมู่นี้ถูกล็อกอยู่</div>
+            <div class="empty-state-sub">แตะเพื่อใส่รหัสผ่านและดูข้อมูล</div>
+            <button class="btn btn-primary btn-sm mt-4">ใส่รหัสผ่าน</button>
+           </div>`
+        : `<div class="empty-state">
+            <div class="empty-state-icon">📭</div>
+            <div class="empty-state-title">ไม่พบโน้ต</div>
+           </div>`);
 
   app.innerHTML = `
-    <div class="app-wrapper">
+    <div class="app-wrapper ${S.sidebarOpen ? 'sidebar-open' : ''}">
+      <div class="sidebar-overlay" onclick="toggleSidebar(false)"></div>
       <nav class="sidebar">
         <div class="sidebar-header">
           <div class="sidebar-brand">
@@ -152,8 +173,11 @@ function renderList() {
       </nav>
       <div class="main-area">
         <div class="mobile-header onenote-header">
+          <button class="menu-toggle" onclick="toggleSidebar(true)">
+            <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+          </button>
           <div class="mobile-header-title">Private Note</div>
-          <button class="btn btn-primary btn-sm" style="background:rgba(255,255,255,0.2); color:white; border:none;" onclick="go('edit',{editData:{category:S.activeCategory||'',pageTitle:'',blocks:[],isNew:true}})">+ เพิ่ม</button>
+          <button class="btn btn-primary btn-sm" style="background:rgba(255,255,255,0.2); border:none;" onclick="go('edit',{editData:{category:S.activeCategory||'',pageTitle:'',blocks:[],isNew:true}})">+ เพิ่ม</button>
         </div>
         <div class="search-section">
           <div class="search-box">
@@ -162,9 +186,10 @@ function renderList() {
           </div>
         </div>
         <div class="cat-chips">${chips}</div>
-        <div class="content-area" style="padding:0; max-width:100%;">
-          <div class="section-heading" style="padding:16px 24px 8px; margin:0; background:var(--surface); border-bottom:1px solid var(--border); font-size:16px; font-weight:700; color:var(--text); text-transform:none;">
-            ${esc(S.activeCategory || "หน้าทั้งหมด")}
+        <div class="content-area">
+          <div class="section-heading" style="display:flex; justify-content:space-between; align-items:center;">
+            <span>${esc(S.activeCategory || "หน้าทั้งหมด")}</span>
+            ${isCurrentLocked && isCurrentUnlocked ? '<button class="btn btn-ghost btn-sm" style="padding:2px 8px; font-size:10px;" onclick="lockCategoryNow()">🔒 ล็อกตอนนี้</button>' : ''}
           </div>
           <div class="page-list">${cards}</div>
         </div>
@@ -176,6 +201,38 @@ function renderList() {
 function setCategory(cat) {
   S.activeCategory = cat;
   S.searchQuery = "";
+  S.sidebarOpen = false; // ปิด sidebar เมื่อเลือกหมวดหมู่ (สำหรับมือถือ)
+  renderList();
+}
+
+function toggleSidebar(open) {
+  S.sidebarOpen = open;
+  renderList();
+}
+
+async function unlockCategory(category) {
+  const pwd = await promptPassword(`หมวดหมู่ "${category}" ถูกล็อคไว้ กรุณาใส่รหัสผ่าน`);
+  if (!pwd) return;
+  
+  // ทดสอบดึงข้อมูลสั้นๆ เพื่อเช็ครหัสผ่าน
+  try {
+    renderLoading();
+    await api("getPage", { category, pageTitle: "CHECK_PWD", password: pwd });
+    // ถ้าไม่ Error แสดงว่ารหัสถูก (หรือ Page ไม่มีจริงแต่ผ่านตัวเช็ครหัสใน Backend)
+  } catch (e) {
+    if (e.message.includes("INVALID_CATEGORY_PASSWORD")) {
+      alert("รหัสผ่านไม่ถูกต้อง!");
+      renderList();
+      return;
+    }
+  }
+  
+  S.categoryPasswords[category] = pwd;
+  renderList();
+}
+
+function lockCategoryNow() {
+  delete S.categoryPasswords[S.activeCategory];
   renderList();
 }
 
@@ -708,15 +765,22 @@ async function setLock(category) {
 }
 
 async function deleteLock(category) {
-  const ok = await confirm(`ถอดรหัสผ่าน?`, `ยืนยันการถอดรหัสหมวดหมู่ "${category}"`);
-  if (!ok) return;
+  const pwd = await promptPassword(`กรุณาใส่รหัสผ่านเดิมของ "${category}" เพื่อยืนยันการถอดล็อก`);
+  if (!pwd) return;
+  
   try {
-    await api("deleteCategoryPassword", { category });
+    await api("deleteCategoryPassword", { category, password: pwd });
     delete S.categoryPasswords[category];
     toast(`ถอดล็อกสำเร็จ`, "success");
     await loadCategories();
     renderLockSettings();
-  } catch (e) { toast(e.message, "error"); }
+  } catch (e) { 
+    if (e.message.includes("INVALID_CATEGORY_PASSWORD")) {
+      alert("รหัสผ่านไม่ถูกต้อง! ไม่สามารถถอดล็อกได้");
+    } else {
+      toast(e.message, "error"); 
+    }
+  }
 }
 
 /* ── Init ── */
