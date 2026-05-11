@@ -234,7 +234,19 @@ img { max-width: 100%; display: block; }
 }
 .main-header-actions { display: flex; align-items: center; gap: 6px; }
 
-.content-area { flex: 1; padding: 24px; max-width: 960px; width: 100%; }
+.content-area { 
+  flex: 1; 
+  padding: 16px 20px; 
+  max-width: 900px; 
+  width: 100%; 
+  margin: 0 auto;
+}
+
+@media (max-width: 600px) {
+  .content-area {
+    padding: 12px 16px;
+  }
+}
 
 /* ── Page List (OneNote Style) ── */
 .page-list {
@@ -243,10 +255,10 @@ img { max-width: 100%; display: block; }
 .page-list-item {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding: 16px 24px;
+  padding: 18px 20px;
   cursor: pointer;
   transition: background 0.15s;
-  display: flex; flex-direction: column; gap: 4px;
+  display: flex; flex-direction: column; gap: 6px;
 }
 .page-list-item:hover {
   background: var(--gray-50);
@@ -377,7 +389,10 @@ img { max-width: 100%; display: block; }
 }
 
 /* ── Edit Form ── */
-.edit-form { display: flex; flex-direction: column; gap: 20px; }
+.edit-form { 
+  display: flex; flex-direction: column; gap: 24px; 
+  padding: 8px 0;
+}
 .form-group { display: flex; flex-direction: column; gap: 6px; }
 .form-label {
   font-size: 12.5px; font-weight: 600; color: var(--text-2);
@@ -733,10 +748,24 @@ img { max-width: 100%; display: block; }
   .mobile-header{ display: flex; }
   .main-header  { display: none; }
   .fab          { display: flex; }
-  .content-area { padding: 0; }
-  .search-section { padding: 16px 16px 0; }
-  .cat-chips    { display: flex; padding: 12px 16px; }
-  .modal-box    { padding: 20px; }
+  
+  .content-area { 
+    padding: 16px 20px 40px; 
+  }
+  
+  .search-section { 
+    padding: 20px 20px 8px; 
+  }
+  
+  .cat-chips { 
+    padding: 8px 20px 20px; 
+  }
+  
+  .edit-form {
+    padding: 4px 4px 24px;
+  }
+  
+  .modal-box { padding: 24px; }
   .toast-container { bottom: calc(var(--nav-h) + 12px); right: 12px; left: 12px; }
   .toast { max-width: 100%; }
 }
