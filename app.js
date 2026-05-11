@@ -11,6 +11,8 @@ const S = {
   editData: null,
   token: null,
   searchQuery: "",
+  lockedCategories: [],
+  categoryPasswords: {},
 };
 
 const app = document.getElementById("app");
@@ -315,12 +317,17 @@ async function deletePage() {
   const ok = await confirm("ลบหน้านี้?", `คุณต้องการลบ "${S.pageData.pageTitle}" ใช่ไหม? การดำเนินการนี้ไม่สามารถยกเลิกได้`);
   if (!ok) return;
   try {
-    await api("deletePage", { category: S.pageData.category, pageTitle: S.pageData.pageTitle });
+    await api("deletePage", { category: S.pageData.category, pageTitle: S.pageData.pageTitle, password: S.categoryPasswords[S.pageData.category] });
     toast("ลบสำเร็จ", "success");
     await loadCategories();
     go("list");
   } catch (e) {
-    toast(e.message, "error");
+    if (e.message.includes("INVALID_CATEGORY_PASSWORD")) {
+      alert("เซสชันรหัสผ่านหมดอายุ กรุณาเข้าสู่หน้านี้ใหม่");
+      go("list");
+    } else {
+      toast(e.message, "error");
+    }
   }
 }
 
@@ -563,19 +570,30 @@ async function savePage() {
 
   S.editData.category  = cat;
   S.editData.pageTitle = title;
+  
+  if (S.lockedCategories.includes(cat) && !S.categoryPasswords[cat]) {
+    const pwd = prompt(`หมวดหมู่ "${cat}" ถูกล็อคไว้ กรุณาใส่รหัสผ่านเพื่อบันทึก:`);
+    if (!pwd) return;
+    S.categoryPasswords[cat] = pwd;
+  }
 
   const saveBtn = document.querySelector(".btn-primary");
   if (saveBtn) { saveBtn.disabled = true; saveBtn.innerHTML = '<div class="spinner"></div> กำลังบันทึก...'; }
 
   try {
-    await api("savePage", { category: cat, pageTitle: title, blocks: S.editData.blocks });
+    await api("savePage", { category: cat, pageTitle: title, blocks: S.editData.blocks, password: S.categoryPasswords[cat] });
     toast("บันทึกสำเร็จ ✓", "success");
     await loadCategories();
-    const data = await api("getPage", { category: cat, pageTitle: title });
+    const data = await api("getPage", { category: cat, pageTitle: title, password: S.categoryPasswords[cat] });
     S.pageData = data;
     go("view");
   } catch (e) {
-    toast(e.message, "error");
+    if (e.message.includes("INVALID_CATEGORY_PASSWORD")) {
+      delete S.categoryPasswords[cat];
+      alert("รหัสผ่านไม่ถูกต้อง! ไม่สามารถบันทึกได้");
+    } else {
+      toast(e.message, "error");
+    }
     if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = "บันทึก"; }
   }
 }
@@ -584,6 +602,7 @@ async function savePage() {
 async function loadCategories() {
   const res = await api("listTitles");
   S.categories = res.categories || [];
+  S.lockedCategories = res.lockedCategories || [];
 }
 
 async function init() {
