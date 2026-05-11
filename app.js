@@ -78,7 +78,7 @@ function go(view, params = {}) {
 
 /* ── Render ── */
 function render() {
-  const screens = { loading: renderLoading, list: renderList, view: renderView, edit: renderEdit };
+  const screens = { loading: renderLoading, list: renderList, view: renderView, edit: renderEdit, lockSettings: renderLockSettings };
   (screens[S.view] || renderLoading)();
 }
 
@@ -143,6 +143,10 @@ function renderList() {
           <button class="sidebar-add-btn" onclick="go('edit',{editData:{category:S.activeCategory||'',pageTitle:'',blocks:[],isNew:true}})">
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
             เพิ่มหน้าใหม่
+          </button>
+          <button class="sidebar-add-btn" style="background:var(--primary-50);color:var(--primary-600);margin-top:6px" onclick="go('lockSettings')">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            จัดการรหัสผ่าน
           </button>
         </div>
       </nav>
@@ -485,21 +489,30 @@ function renderEditBlock(b, i) {
 }
 
 /* ── Block Mutations ── */
+function syncEditFields() {
+  // บันทึกค่าจาก input field ก่อนที่จะ render ใหม่ เพื่อไม่ให้หาย
+  const cat = document.getElementById("e-cat")?.value;
+  const title = document.getElementById("e-title")?.value;
+  if (cat !== undefined) S.editData.category = cat;
+  if (title !== undefined) S.editData.pageTitle = title;
+}
 function addBlock(type) {
+  syncEditFields();
   const defaults = { text: { type:"text", label:"", value:"" }, table: { type:"table", data:[] }, image: { type:"image", url:"" } };
   S.editData.blocks.push(defaults[type]);
   renderEdit();
 }
-function removeBlock(i) { S.editData.blocks.splice(i, 1); renderEdit(); }
+function removeBlock(i) { syncEditFields(); S.editData.blocks.splice(i, 1); renderEdit(); }
 function updateBlock(i, key, val) { S.editData.blocks[i][key] = val; }
 function updateCell(bi, ri, col, val) { S.editData.blocks[bi].data[ri][col] = val; }
 function addRow(bi) {
+  syncEditFields();
   const cols = Object.keys(S.editData.blocks[bi].data[0] || {});
   const row = {}; cols.forEach(c => row[c] = "");
   S.editData.blocks[bi].data.push(row);
   renderEdit();
 }
-function removeRow(bi, ri) { S.editData.blocks[bi].data.splice(ri, 1); renderEdit(); }
+function removeRow(bi, ri) { syncEditFields(); S.editData.blocks[bi].data.splice(ri, 1); renderEdit(); }
 function addCol(bi) {
   const name = prompt("ชื่อ Column ใหม่:", "column");
   if (!name) return;
@@ -572,7 +585,7 @@ async function savePage() {
   S.editData.pageTitle = title;
   
   if (S.lockedCategories.includes(cat) && !S.categoryPasswords[cat]) {
-    const pwd = prompt(`หมวดหมู่ "${cat}" ถูกล็อคไว้ กรุณาใส่รหัสผ่านเพื่อบันทึก:`);
+    const pwd = await promptPassword(`หมวดหมู่ "${cat}" ถูกล็อคไว้ กรุณาใส่รหัสผ่าน`);
     if (!pwd) return;
     S.categoryPasswords[cat] = pwd;
   }
@@ -596,6 +609,114 @@ async function savePage() {
     }
     if (saveBtn) { saveBtn.disabled = false; saveBtn.innerHTML = "บันทึก"; }
   }
+}
+
+/* ── Lock Settings View ── */
+function renderLockSettings() {
+  const ls = document.getElementById("loading-screen");
+  if (ls) ls.style.display = "none";
+  
+  const rows = S.categories.map(c => {
+    const isLocked = S.lockedCategories.includes(c.category);
+    return `<div class="lock-row">
+      <div class="lock-row-name">
+        <span>${isLocked ? '🔒' : '📂'}</span>
+        <span>${esc(c.category)}</span>
+      </div>
+      <div class="lock-row-actions">
+        ${isLocked
+          ? `<button class="btn btn-danger btn-sm" onclick="deleteLock('${esc(c.category)}')">ถอดล็อก</button>`
+          : `<button class="btn btn-primary btn-sm" onclick="setLock('${esc(c.category)}')">ล็อก</button>`
+        }
+      </div>
+    </div>`;
+  }).join("");
+
+  app.innerHTML = `
+    <div class="app-wrapper">
+      <nav class="sidebar">
+        <div class="sidebar-header">
+          <div class="sidebar-brand">
+            <svg width="36" height="36" viewBox="0 0 48 48" fill="none">
+              <rect width="48" height="48" rx="14" fill="#6366f1"/>
+              <path d="M14 16h20M14 24h14M14 32h18" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+            </svg>
+            <div><div class="sidebar-brand-text">Private Note</div></div>
+          </div>
+        </div>
+        <div class="sidebar-nav">
+          <button class="sidebar-cat-btn" onclick="go('list')">
+            <span class="sidebar-cat-icon">←</span><span>กลับหน้าหลัก</span>
+          </button>
+        </div>
+      </nav>
+      <div class="main-area">
+        <div class="mobile-header">
+          <button class="main-header-back" onclick="go('list')">←</button>
+          <div class="mobile-header-title">🔐 จัดการรหัสหมวดหมู่</div>
+        </div>
+        <div class="main-header">
+          <button class="main-header-back" onclick="go('list')">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+          </button>
+          <div class="main-header-title">🔐 จัดการรหัสหมวดหมู่</div>
+        </div>
+        <div class="content-area">
+          <div style="background:var(--primary-50);border-radius:var(--r-md);padding:14px 16px;margin-bottom:20px;border-left:4px solid var(--primary);">
+            <div style="font-weight:600;font-size:14px;color:var(--primary)">💡 วิธีใช้งาน</div>
+            <div style="font-size:13px;color:var(--text-2);margin-top:4px">กด "ล็อก" เพื่อตั้งรหัสผ่านใหม่ หรือกด "ถอดล็อก" เพื่อยกเลิกรหัสผ่าน</div>
+          </div>
+          <div class="lock-list">${rows || '<div class="empty-state"><div class="empty-state-icon">📁</div><div class="empty-state-title">ยังไม่มีหมวดหมู่</div></div>'}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+async function promptPassword(title) {
+  return new Promise(resolve => {
+    const ov = document.createElement("div");
+    ov.className = "modal-overlay";
+    ov.innerHTML = `
+      <div class="modal-box">
+        <div class="modal-title">${title}</div>
+        <div style="margin:16px 0">
+          <input id="pwd-input" type="password" class="form-input" placeholder="รหัสผ่าน" autocomplete="off" style="width:100%">
+        </div>
+        <div class="modal-actions">
+          <button class="btn btn-ghost btn-sm" id="m-cancel">ยกเลิก</button>
+          <button class="btn btn-primary btn-sm" id="m-ok">ยืนยัน</button>
+        </div>
+      </div>`;
+    document.getElementById("modal-root").appendChild(ov);
+    const input = ov.querySelector("#pwd-input");
+    setTimeout(() => input.focus(), 50);
+    input.onkeydown = (e) => { if (e.key === "Enter") { ov.remove(); resolve(input.value); } };
+    ov.querySelector("#m-cancel").onclick = () => { ov.remove(); resolve(null); };
+    ov.querySelector("#m-ok").onclick = () => { ov.remove(); resolve(input.value); };
+  });
+}
+
+async function setLock(category) {
+  const pwd = await promptPassword(`ตั้งรหัสผ่านสำหรับ "${category}"`);
+  if (!pwd) return;
+  try {
+    await api("setCategoryPassword", { category, password: pwd });
+    toast(`ล็อกหมวดหมู่ "${category}" แล้ว 🔒`, "success");
+    await loadCategories();
+    renderLockSettings();
+  } catch (e) { toast(e.message, "error"); }
+}
+
+async function deleteLock(category) {
+  const ok = await confirm(`ถอดรหัสผ่าน?`, `ยืนยันการถอดรหัสหมวดหมู่ "${category}"`);
+  if (!ok) return;
+  try {
+    await api("deleteCategoryPassword", { category });
+    delete S.categoryPasswords[category];
+    toast(`ถอดล็อกสำเร็จ`, "success");
+    await loadCategories();
+    renderLockSettings();
+  } catch (e) { toast(e.message, "error"); }
 }
 
 /* ── Init ── */

@@ -262,6 +262,21 @@ img { max-width: 100%; display: block; }
   font-size: 12px; color: var(--text-3);
 }
 
+/* ── Lock Management List ── */
+.lock-list { display: flex; flex-direction: column; gap: 0; }
+.lock-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  gap: 12px;
+}
+.lock-row-name {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 15px; font-weight: 600; color: var(--text);
+}
+.lock-row-actions { flex-shrink: 0; }
+
 .empty-state {
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
