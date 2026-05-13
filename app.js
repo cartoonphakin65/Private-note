@@ -185,7 +185,6 @@ function renderList() {
             <input type="text" placeholder="ค้นหาโน้ต..." value="${esc(S.searchQuery)}" oninput="setSearch(this.value)" class="search-input">
           </div>
         </div>
-        <div class="cat-chips">${chips}</div>
         <div class="content-area">
           <div class="section-heading" style="display:flex; justify-content:space-between; align-items:center;">
             <span>${esc(S.activeCategory || "หน้าทั้งหมด")}</span>

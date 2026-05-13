@@ -202,7 +202,7 @@ img { max-width: 100%; display: block; }
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  margin-left: var(--sidebar-w);
+  margin-left: var(--sidebar);
   transition: margin-left 0.3s ease;
 }
 .sidebar-overlay {
